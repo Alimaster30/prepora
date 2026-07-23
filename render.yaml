@@ -1,0 +1,62 @@
+services:
+  - type: web
+    name: prepora
+    runtime: node
+    plan: starter
+    region: ohio
+    autoDeployTrigger: checksPass
+    buildCommand: npm ci && npm run db:migrate && npm run validate:production && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/live
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://prepora.onrender.com
+      - key: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_VAPI_WEB_TOKEN
+        sync: false
+      - key: NEXT_PUBLIC_VAPI_WORKFLOW_ID
+        sync: false
+      - key: NEXT_PUBLIC_SUPPORT_EMAIL
+        sync: false
+      - key: NEXT_PUBLIC_PRIVACY_EMAIL
+        sync: false
+      - key: NEXT_PUBLIC_LEGAL_NAME
+        sync: false
+      - key: NEXT_PUBLIC_LEGAL_JURISDICTION
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PYTHON_API_URL
+        value: https://prepora-coach.onrender.com
+      - key: INTERNAL_SERVICE_KEY
+        fromService:
+          type: web
+          name: prepora-coach
+          envVarKey: INTERNAL_SERVICE_KEY
+
+  - type: web
+    name: prepora-coach
+    runtime: python
+    plan: starter
+    region: ohio
+    rootDir: python-backend
+    autoDeployTrigger: checksPass
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python -m nltk.downloader punkt punkt_tab stopwords
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.11
+      - key: ENVIRONMENT
+        value: production
+      - key: BACKEND_ALLOWED_ORIGINS
+        value: https://prepora.onrender.com
+      - key: INTERNAL_SERVICE_KEY
+        generateValue: true
