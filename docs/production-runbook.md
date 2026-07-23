@@ -2,8 +2,8 @@
 
 ## Render deployment
 
-The production Blueprint is `render.yaml`. It provisions the `prepora`
-Next.js service at `https://prepora.onrender.com` and the
+The production Blueprint is `render.yaml`. It provisions the `prepora-io`
+Next.js service at `https://prepora-oydp.onrender.com` and the
 `prepora-coach` FastAPI service in Render's Ohio region, close to the current
 Neon `us-east-2` database.
 
@@ -12,7 +12,7 @@ The web build applies idempotent Neon migrations before validating and building
 the application. Render uses `/api/live` for web liveness and `/health` for
 coach liveness; dependency readiness remains available at `/api/health`.
 
-Add `https://prepora.onrender.com` to the Google OAuth web client's authorized
+Add `https://prepora-oydp.onrender.com` to the Google OAuth web client's authorized
 JavaScript origins. Do not add paths or trailing slashes to that origin.
 
 ## Required external controls
