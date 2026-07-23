@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import {
-  deleteGoogleAppSession,
-  deleteGoogleSessionsForUser,
+  deleteAppSession,
+  deleteSessionsForUser,
 } from "@/lib/server/app-session";
 import { enforceRateLimit } from "@/lib/server/rate-limit";
 import { requireSessionUser } from "@/lib/server/session";
@@ -16,9 +16,10 @@ export async function POST() {
       limit: 5,
       windowMs: 60 * 60 * 1_000,
     });
-    await deleteGoogleSessionsForUser(user.id);
-    await deleteGoogleAppSession();
+    await deleteSessionsForUser(user.id);
+    await deleteAppSession();
     const response = NextResponse.json({ success: true });
+    response.cookies.delete("prepora_session");
     response.cookies.delete("prepora_google_session");
     return response;
   } catch (error: unknown) {

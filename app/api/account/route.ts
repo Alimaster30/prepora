@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { deleteUserData } from "@/lib/server/account-deletion";
 import {
-  deleteGoogleAppSession,
-  deleteGoogleSessionsForUser,
+  deleteAppSession,
+  deleteSessionsForUser,
 } from "@/lib/server/app-session";
 import { database } from "@/lib/server/database";
 import { requireSessionUser } from "@/lib/server/session";
@@ -26,7 +26,7 @@ export async function DELETE(request: NextRequest) {
         {
           success: false,
           error:
-            "For security, sign out and sign in with Google again before deleting your account.",
+            "For security, sign out and sign in again before deleting your account.",
         },
         { status: 403 }
       );
@@ -57,9 +57,9 @@ export async function DELETE(request: NextRequest) {
       set status = 'application-data-deleted'
       where id = ${deletionRequestId}
     `;
-    await deleteGoogleSessionsForUser(sessionUser.id);
+    await deleteSessionsForUser(sessionUser.id);
     await deleteUserById(sessionUser.id);
-    await deleteGoogleAppSession();
+    await deleteAppSession();
     await sql`
       update account_deletion_requests
       set status = 'complete', completed_at = now()
@@ -67,6 +67,7 @@ export async function DELETE(request: NextRequest) {
     `;
 
     const response = NextResponse.json({ success: true });
+    response.cookies.delete("prepora_session");
     response.cookies.delete("prepora_google_session");
     return response;
   } catch (error: unknown) {

@@ -10,6 +10,7 @@ const sections = [
     title: "Information we handle",
     body: [
       "Account information such as your name, email address, verification status, and authentication identifiers.",
+      "If you create a password, Prepora stores a salted cryptographic hash rather than the password itself.",
       "Content you choose to provide, including resumes, job context, interview answers, transcripts, feedback, schedules, and settings.",
       "Operational information such as feature usage counts, request diagnostics, and security events needed to operate and protect the service.",
     ],

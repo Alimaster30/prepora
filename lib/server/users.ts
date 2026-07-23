@@ -6,7 +6,7 @@ import { database } from "@/lib/server/database";
 
 export interface DatabaseUser {
   id: string;
-  googleSubject: string;
+  googleSubject: string | null;
   email: string;
   name: string;
   avatarUrl: string | null;
@@ -15,11 +15,15 @@ export interface DatabaseUser {
 
 type UserRow = {
   id: string;
-  google_subject: string;
+  google_subject: string | null;
   email: string;
   name: string;
   avatar_url: string | null;
   email_verified: boolean;
+};
+
+type PasswordUserRow = UserRow & {
+  password_hash: string | null;
 };
 
 function mapUser(row: UserRow): DatabaseUser {
@@ -88,6 +92,46 @@ export async function upsertGoogleUser(profile: {
     returning id, google_subject, email, name, avatar_url, email_verified
   `;
   return { user: mapUser(rows[0]), isNewUser: true };
+}
+
+export async function findPasswordUserByEmail(email: string): Promise<{
+  user: DatabaseUser;
+  passwordHash: string;
+} | null> {
+  const sql = database();
+  const rows = await sql<PasswordUserRow[]>`
+    select id, google_subject, email, name, avatar_url, email_verified, password_hash
+    from users
+    where lower(email) = lower(${email})
+    limit 1
+  `;
+  const row = rows[0];
+  if (!row?.password_hash) return null;
+  return { user: mapUser(row), passwordHash: row.password_hash };
+}
+
+export async function createPasswordUser(profile: {
+  email: string;
+  name: string;
+  passwordHash: string;
+}): Promise<DatabaseUser | null> {
+  const sql = database();
+  const rows = await sql<UserRow[]>`
+    insert into users (
+      id, google_subject, email, name, avatar_url, email_verified, password_hash
+    ) values (
+      ${randomUUID()},
+      null,
+      ${profile.email},
+      ${profile.name},
+      null,
+      false,
+      ${profile.passwordHash}
+    )
+    on conflict do nothing
+    returning id, google_subject, email, name, avatar_url, email_verified
+  `;
+  return rows[0] ? mapUser(rows[0]) : null;
 }
 
 export async function deleteUserById(id: string): Promise<void> {

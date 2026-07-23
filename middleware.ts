@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
 export function middleware(request: NextRequest) {
   const hasSession =
     Boolean(request.cookies.get("session")?.value) ||
+    Boolean(request.cookies.get("prepora_session")?.value) ||
     Boolean(request.cookies.get("prepora_google_session")?.value);
   const { pathname } = request.nextUrl;
 

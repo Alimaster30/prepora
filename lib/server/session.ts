@@ -1,14 +1,14 @@
 import "server-only";
 
-import { getGoogleAppSession } from "@/lib/server/app-session";
+import { getAppSession, type AuthProvider } from "@/lib/server/app-session";
 import { findUserById } from "@/lib/server/users";
 
 export interface SessionUser {
   id: string;
   name: string;
   email: string;
-  emailVerified: true;
-  authProvider: "google.com";
+  emailVerified: boolean;
+  authProvider: AuthProvider;
   authTime: number;
 }
 
@@ -29,17 +29,17 @@ export class AuthorizationError extends Error {
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const session = await getGoogleAppSession();
+  const session = await getAppSession();
   if (!session) return null;
   const user = await findUserById(session.userId);
-  if (!user?.email || !user.emailVerified) return null;
+  if (!user?.email) return null;
 
   return {
     id: user.id,
     name: user.name.trim() || user.email.split("@")[0] || "Candidate",
     email: user.email,
-    emailVerified: true,
-    authProvider: "google.com",
+    emailVerified: user.emailVerified,
+    authProvider: session.authProvider,
     authTime: session.authTime,
   };
 }

@@ -40,9 +40,9 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold text-foreground">Your account</h2>
           <p className="mt-3">
-            Provide accurate account information, keep credentials secure, verify your
-            email, and use only your own account. You are responsible for content submitted
-            through your account and must have the right to use it.
+            Provide accurate account information, keep credentials secure, complete any
+            verification we request, and use only your own account. You are responsible for
+            content submitted through your account and must have the right to use it.
           </p>
         </section>
         <section>

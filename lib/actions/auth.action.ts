@@ -1,14 +1,23 @@
 "use server";
 
 import { OAuth2Client } from "google-auth-library";
+import { z } from "zod";
 
-import {
-  createGoogleAppSession,
-  deleteGoogleAppSession,
-} from "@/lib/server/app-session";
+import { createAppSession, deleteAppSession } from "@/lib/server/app-session";
+import { hashPassword, verifyPassword } from "@/lib/server/password";
 import { enforceRateLimit, RateLimitError } from "@/lib/server/rate-limit";
 import { getSessionUser } from "@/lib/server/session";
-import { upsertGoogleUser } from "@/lib/server/users";
+import {
+  createPasswordUser,
+  findPasswordUserByEmail,
+  upsertGoogleUser,
+} from "@/lib/server/users";
+import {
+  passwordSignInSchema,
+  passwordSignUpSchema,
+  type PasswordSignInInput,
+  type PasswordSignUpInput,
+} from "@/lib/validations/auth";
 
 const googleClient = new OAuth2Client();
 
@@ -58,7 +67,7 @@ export async function signInWithGoogle(params: GoogleSignInParams) {
         : {}),
     });
 
-    await createGoogleAppSession(user.id);
+    await createAppSession(user.id, "google.com");
     return { success: true as const, isNewUser };
   } catch (error: unknown) {
     console.error("Direct Google sign-in failed:", error);
@@ -72,8 +81,98 @@ export async function signInWithGoogle(params: GoogleSignInParams) {
   }
 }
 
+export async function signInWithPassword(params: PasswordSignInInput) {
+  try {
+    const input = passwordSignInSchema.parse(params);
+    await enforceRateLimit({
+      bucket: "password-signin-ip",
+      limit: 12,
+      windowMs: 10 * 60 * 1_000,
+    });
+    await enforceRateLimit({
+      bucket: "password-signin-email",
+      identifier: input.email,
+      limit: 10,
+      windowMs: 10 * 60 * 1_000,
+    });
+
+    const credentials = await findPasswordUserByEmail(input.email);
+    const passwordHash =
+      credentials?.passwordHash ?? (await hashPassword("invalid-credential"));
+    const passwordMatches = await verifyPassword(input.password, passwordHash);
+    if (!credentials || !passwordMatches) {
+      return {
+        success: false as const,
+        message: "Email or password is incorrect.",
+      };
+    }
+
+    await createAppSession(credentials.user.id, "password");
+    return { success: true as const, isNewUser: false as const };
+  } catch (error: unknown) {
+    if (!(error instanceof z.ZodError)) {
+      console.error("Password sign-in failed:", error);
+    }
+    return {
+      success: false as const,
+      message:
+        error instanceof RateLimitError
+          ? error.message
+          : error instanceof z.ZodError
+            ? "Check your email and password, then try again."
+            : "Sign-in could not be completed. Please try again.",
+    };
+  }
+}
+
+export async function signUpWithPassword(params: PasswordSignUpInput) {
+  try {
+    const input = passwordSignUpSchema.parse(params);
+    await enforceRateLimit({
+      bucket: "password-signup-ip",
+      limit: 8,
+      windowMs: 60 * 60 * 1_000,
+    });
+    await enforceRateLimit({
+      bucket: "password-signup-email",
+      identifier: input.email,
+      limit: 4,
+      windowMs: 60 * 60 * 1_000,
+    });
+
+    const passwordHash = await hashPassword(input.password);
+    const user = await createPasswordUser({
+      email: input.email,
+      name: input.name,
+      passwordHash,
+    });
+    if (!user) {
+      return {
+        success: false as const,
+        message: "An account with this email already exists. Sign in instead.",
+      };
+    }
+
+    await createAppSession(user.id, "password");
+    return { success: true as const, isNewUser: true as const };
+  } catch (error: unknown) {
+    if (!(error instanceof z.ZodError)) {
+      console.error("Password sign-up failed:", error);
+    }
+    return {
+      success: false as const,
+      message:
+        error instanceof RateLimitError
+          ? error.message
+          : error instanceof z.ZodError
+            ? "Check your account details, then try again."
+            : "Your account could not be created. Please try again.",
+    };
+  }
+}
+
 export async function signOut() {
-  await deleteGoogleAppSession();
+  await deleteAppSession();
 }
 
 export async function getCurrentUser(): Promise<User | null> {
