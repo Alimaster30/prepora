@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: prepora
+    name: prepora-io
     runtime: node
     plan: free
     region: ohio
@@ -12,7 +12,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_APP_URL
-        value: https://prepora.onrender.com
+        value: https://prepora-oydp.onrender.com
       - key: NEXT_PUBLIC_GOOGLE_CLIENT_ID
         sync: false
       - key: NEXT_PUBLIC_VAPI_WEB_TOKEN
@@ -55,6 +55,6 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: BACKEND_ALLOWED_ORIGINS
-        value: https://prepora.onrender.com
+        value: https://prepora-oydp.onrender.com
       - key: INTERNAL_SERVICE_KEY
         generateValue: true
