@@ -2,7 +2,7 @@ services:
   - type: web
     name: prepora
     runtime: node
-    plan: starter
+    plan: free
     region: ohio
     autoDeployTrigger: checksPass
     buildCommand: npm ci && npm run db:migrate && npm run validate:production && npm run build
@@ -43,7 +43,7 @@ services:
   - type: web
     name: prepora-coach
     runtime: python
-    plan: starter
+    plan: free
     region: ohio
     rootDir: python-backend
     autoDeployTrigger: checksPass
