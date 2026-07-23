@@ -39,7 +39,7 @@ interface User {
   name: string;
   email: string;
   id: string;
-  emailVerified: true;
+  emailVerified: boolean;
   authProvider: string;
 }
 

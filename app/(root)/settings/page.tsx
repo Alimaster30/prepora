@@ -1,4 +1,4 @@
-import { BadgeCheck, ShieldCheck } from "lucide-react";
+import { BadgeCheck, KeyRound, ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import DeleteAccountPanel from "@/components/settings/DeleteAccountPanel";
@@ -24,12 +24,17 @@ export default async function SettingsPage() {
               <h2 className="text-base font-semibold">{user.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
               <p className="mt-2 text-xs font-medium text-muted-foreground">
-                Signed in securely with Google
+                Signed in securely with{" "}
+                {user.authProvider === "google.com" ? "Google" : "email and password"}
               </p>
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-              <BadgeCheck aria-hidden="true" className="size-3.5" />
-              Email verified
+              {user.emailVerified ? (
+                <BadgeCheck aria-hidden="true" className="size-3.5" />
+              ) : (
+                <KeyRound aria-hidden="true" className="size-3.5" />
+              )}
+              {user.emailVerified ? "Email verified" : "Password protected"}
             </span>
           </div>
           <div className="mt-5 flex items-start gap-3 border-t border-border pt-5">

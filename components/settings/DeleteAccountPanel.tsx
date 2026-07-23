@@ -49,7 +49,7 @@ export default function DeleteAccountPanel() {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "We could not delete the account.";
-      if (message.includes("sign in with Google again")) {
+      if (message.includes("sign in again")) {
         toast.error(message);
         await signOut().catch(() => undefined);
         router.replace("/sign-in?reauth=delete-account");
@@ -88,7 +88,7 @@ export default function DeleteAccountPanel() {
             <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
             <AlertDialogDescription>
               This cannot be undone. Type DELETE to confirm. For security, your
-              Google sign-in must be less than ten minutes old.
+              latest sign-in must be less than ten minutes old.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2 py-2">
