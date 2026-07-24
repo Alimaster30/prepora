@@ -8,7 +8,10 @@ import {
   refundDailyQuota,
 } from "@/lib/server/quota";
 import { requireSessionUser } from "@/lib/server/session";
-import { coachRequestHeaders } from "@/lib/server/coach";
+import {
+  COACH_ANALYSIS_TIMEOUT_MS,
+  coachRequestHeaders,
+} from "@/lib/server/coach";
 
 const PYTHON_API = process.env.PYTHON_API_URL ?? "http://localhost:8001";
 
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest) {
       headers: coachRequestHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ question: body.question, answer: body.answer }),
       cache: "no-store",
-    }, 20_000);
+    }, COACH_ANALYSIS_TIMEOUT_MS);
 
     if (!res.ok) {
       throw new Error(`Text coach returned status ${res.status}.`);
@@ -39,6 +42,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error: unknown) {
+    console.error("[mock-interview/analyze] Coach request failed:", error);
     await refundDailyQuota(quotaReservation).catch((refundError) => {
       console.error("[mock-interview/analyze] Quota refund failed:", refundError);
     });

@@ -10,9 +10,10 @@ import pandas as pd
 import random
 import os
 import secrets
+from threading import Lock
+from typing import Any
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from model import InterviewAnalyzer
 
 app = FastAPI(title="Mock Interview API", version="1.0.0")
 logger = logging.getLogger(__name__)
@@ -51,8 +52,21 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-Prepora-Service-Key"],
 )
 
-# Singleton analyzer — loaded once at startup
-analyzer = InterviewAnalyzer()
+# Singleton analyzer — loaded once, on the first analysis request
+_analyzer: Any | None = None
+_analyzer_lock = Lock()
+
+
+def get_analyzer() -> Any:
+    """Load the heavy ML pipeline only when answer analysis is first used."""
+    global _analyzer
+    if _analyzer is None:
+        with _analyzer_lock:
+            if _analyzer is None:
+                from model import InterviewAnalyzer
+
+                _analyzer = InterviewAnalyzer()
+    return _analyzer
 
 # ── CSV helpers ─────────────────────────────────────────────────────────────
 CSV_PATH = os.path.join(os.path.dirname(__file__), "Mock_interview_questions.csv")
@@ -130,7 +144,7 @@ def analyze_response(body: AnalyzeRequest):
         raise HTTPException(status_code=413, detail="The interview response is too large.")
 
     try:
-        result = analyzer.analyze_response(question, answer)
+        result = get_analyzer().analyze_response(question, answer)
         return result
     except Exception:
         logger.exception("Interview response analysis failed")

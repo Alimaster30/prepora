@@ -410,14 +410,14 @@ export default function MockInterviewChatbotPage() {
                 id="question-limit"
                 type="range"
                 min={1}
-                max={30}
+                max={25}
                 step={1}
                 value={questionLimit}
                 onChange={(e) => setQuestionLimit(Number(e.target.value))}
                 className="h-2 w-full cursor-pointer border-none bg-slate-200 accent-primary"
               />
               <div className="flex justify-between text-xs text-light-400/60">
-                <span>1</span><span>15</span><span>30</span>
+                <span>1</span><span>13</span><span>25</span>
               </div>
             </div>
 
