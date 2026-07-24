@@ -18,6 +18,7 @@ import {
 import { requireSessionUser } from "@/lib/server/session";
 import { getRandomInterviewCover } from "@/lib/utils";
 import { generateStructuredObject } from "@/lib/server/structured-ai";
+import { generatedQuestionsSchema } from "@/lib/validations/interview";
 
 const idSchema = z.string().trim().min(1).max(180);
 const transcriptSchema = z.array(z.object({
@@ -208,16 +209,23 @@ export async function generateInterviewRecord(input: unknown) {
   let quotaReservation: DailyQuotaReservation | undefined;
   try {
     const user = await requireSessionUser();
-    const setup = interviewSetupSchema.parse(input);
+    const setupResult = interviewSetupSchema.safeParse(input);
+    if (!setupResult.success) {
+      return {
+        success: false as const,
+        error:
+          setupResult.error.issues[0]?.message ||
+          "Check the interview setup.",
+      };
+    }
+    const setup = setupResult.data;
     quotaReservation = await consumeDailyQuota(
       user.id,
       "interview-generation",
       8
     );
     const { object } = await generateStructuredObject({
-      schema: z.object({
-        questions: z.array(z.string().trim().min(10).max(1_000)).min(3).max(10),
-      }),
+      schema: generatedQuestionsSchema,
       system:
         "You create realistic mock interview questions. Questions must be concise, speakable, non-duplicative, and appropriate for the requested seniority.",
       prompt: `Create exactly ${setup.amount} ${setup.type.toLowerCase()} interview questions.
@@ -225,9 +233,13 @@ Role: ${setup.role}
 Level: ${setup.level}
 Focus areas: ${setup.techstack.join(", ")}
 ${setup.jobDescription ? `Job context: ${setup.jobDescription}` : ""}
-Balance fundamentals, applied judgment, and evidence from past experience.`,
+Balance fundamentals, applied judgment, and evidence from past experience.
+Return one JSON object with this exact shape: {"questions":["question 1","question 2"]}.`,
     });
-    const questions = object.questions.slice(0, setup.amount);
+    const questions = (Array.isArray(object) ? object : object.questions).slice(
+      0,
+      setup.amount
+    );
     if (questions.length < 3) throw new Error("Too few questions generated.");
     const record = await createRecord("interviews", {
       role: setup.role,
@@ -252,9 +264,7 @@ Balance fundamentals, applied judgment, and evidence from past experience.`,
       error:
         error instanceof QuotaExceededError
           ? error.message
-          : error instanceof z.ZodError
-            ? error.issues[0]?.message || "Check the interview setup."
-            : "Could not generate interview questions. Please try again.",
+          : "Could not generate interview questions. Please try again.",
     };
   }
 }
